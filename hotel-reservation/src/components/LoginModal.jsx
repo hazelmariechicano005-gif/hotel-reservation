@@ -53,6 +53,7 @@ export default function LoginModal({ onLogin, onGoogleLogin, onSignup, authError
           <div className="col-lg-5 d-none d-lg-flex flex-column justify-content-end p-5 text-white" style={{ minHeight: 560, background: 'linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.72)), url(https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1000&q=80) center/cover' }}>
             <span className="text-uppercase small fw-bold" style={{ letterSpacing: 2 }}>DIVAA HOTEL</span>
             <h1 className="display-6 fw-bold">Stay comfortable. Reserve with ease.</h1>
+            <h1>qwertyui</h1>
             <p className="mb-0">Clean rooms, simple booking, and a comfortable stay in Roxas.</p>
           </div>
 
