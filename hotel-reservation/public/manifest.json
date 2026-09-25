@@ -1,0 +1,29 @@
+{
+  "short_name": "DIVAA HOTEL",
+  "name": "DIVAA HOTEL - Luxury & Reservation System",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#fcfaf6",
+  "theme_color": "#b88737",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/"
+}
