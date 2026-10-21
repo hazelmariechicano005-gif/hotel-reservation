@@ -1,4 +1,3 @@
-// File: AdminDashboard.jsx
 import React, { useState, useEffect } from "react";
 
 export default function AdminDashboard({ onLogout, currentUser }) {
