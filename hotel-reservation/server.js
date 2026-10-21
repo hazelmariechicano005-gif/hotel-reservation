@@ -119,10 +119,8 @@ app.post('/api/bookings', (req, res) => {
   const newBooking = {
     id: req.body.id || 'DIVAA-' + Math.floor(100000 + Math.random() * 900000),
     createdAt: req.body.createdAt || new Date().toLocaleString(),
-    roomId: req.body.roomId || '',
-    roomNumber: req.body.roomNumber || '',
     roomName: req.body.roomName || 'Standard Room',
-    roomPrice: Number(req.body.roomPrice) || 1200,
+    roomPrice: req.body.roomPrice || 1200,
     checkIn: req.body.checkIn,
     checkOut: req.body.checkOut,
     nights: req.body.nights || 1,
@@ -132,8 +130,8 @@ app.post('/api/bookings', (req, res) => {
     guestEmail: req.body.guestEmail || 'guest@example.com',
     guestPhone: req.body.guestPhone || '',
     specialRequests: req.body.specialRequests || '',
-    totalPrice: Number(req.body.totalPrice) || 1200,
-    status: 'Confirmed'
+    totalPrice: req.body.totalPrice || 1200,
+    status: req.body.status || 'Confirmed'
   };
 
   // Prepend to top of list so newest booking appears first in Admin
@@ -150,11 +148,6 @@ app.patch('/api/bookings/:id/status', (req, res) => {
 
   if (!booking) {
     return res.status(404).json({ error: 'Booking not found' });
-  }
-
-  const allowedStatuses = ['Confirmed', 'Checked In', 'Checked Out', 'Cancelled'];
-  if (!allowedStatuses.includes(status)) {
-    return res.status(400).json({ error: 'Invalid booking status' });
   }
 
   booking.status = status;

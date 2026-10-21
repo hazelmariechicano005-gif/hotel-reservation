@@ -7,9 +7,9 @@
   --text-dark: #1c1c1e;
   --text-muted: #5e5e62;
   --border-light: #e5dec9;
-  --font-serif: 'Playfair Display', Georgia, serif;
-  --font-display: 'Cinzel', serif;
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-display: "Cinzel", serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
 }
 
 * {
@@ -27,7 +27,11 @@ body {
   scroll-behavior: smooth;
 }
 
-h1, h2, h3, h4, .font-serif {
+h1,
+h2,
+h3,
+h4,
+.font-serif {
   font-family: var(--font-serif);
 }
 
@@ -120,7 +124,7 @@ h1, h2, h3, h4, .font-serif {
 }
 
 .hotel-nav-link::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0px;
   left: 12px;
