@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const pool = require("./db");
+const mysql = require("mysql2");
 
 const app = express();
 
@@ -8,10 +8,80 @@ app.use(cors());
 app.use(express.json());
 
 // ==========================================
-// ROOMS API (Naka-konekta na sa Database)
+// DIRECT DATABASE CONNECTION (XAMPP MySQL)
 // ==========================================
+const pool = mysql
+  .createPool({
+    host: "localhost",
+    user: "root",
+    password: "", // Default XAMPP password ay walang laman
+    database: "divaa_hotel_db",
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  })
+  .promise();
 
-// 1. Kunin lahat ng rooms mula sa database
+// ==========================================
+// USERS API (Sign-in & Register)
+// ==========================================
+app.post("/api/register", async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res
+      .status(400)
+      .json({ message: "Please provide username and password." });
+  }
+  try {
+    const [result] = await pool.query(
+      "INSERT INTO users (username, password, role) VALUES (?, ?, 'user')",
+      [username, password],
+    );
+    res
+      .status(201)
+      .json({
+        ok: true,
+        userId: result.insertId,
+        message: "User registered successfully!",
+      });
+  } catch (err) {
+    console.error(err);
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({ message: "Username already exists." });
+    }
+    res.status(500).json({ message: "Failed to register user." });
+  }
+});
+
+app.post("/api/login", async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res
+      .status(400)
+      .json({ message: "Please provide username and password." });
+  }
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM users WHERE username = ? AND password = ?",
+      [username, password],
+    );
+    if (rows.length === 0) {
+      return res.status(401).json({ message: "Invalid username or password." });
+    }
+    const user = rows[0];
+    res.json({
+      ok: true,
+      user: { id: user.id, username: user.username, role: user.role },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Login failed." });
+  }
+});
+
+// ==========================================
+// ROOMS API
+// ==========================================
 app.get("/api/rooms", async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -24,62 +94,41 @@ app.get("/api/rooms", async (req, res) => {
   }
 });
 
-// 2. Magdagdag ng bagong room sa database
 app.post("/api/rooms", async (req, res) => {
   const { room, price } = req.body;
-
   if (!room || price === undefined || price === "" || Number(price) < 0) {
-    return res.status(400).json({
-      message: "Please provide a valid room and price.",
-    });
+    return res
+      .status(400)
+      .json({ message: "Please provide a valid room and price." });
   }
-
   try {
     const [result] = await pool.query(
       "INSERT INTO rooms (room_name, price) VALUES (?, ?)",
       [room, Number(price)],
     );
-
-    const newRoom = {
-      id: result.insertId,
-      room: room,
-      price: Number(price),
-    };
-
-    res.status(201).json(newRoom);
+    res.status(201).json({ id: result.insertId, room, price: Number(price) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to save room to database." });
   }
 });
 
-// 3. I-update ang room sa database
 app.put("/api/rooms/:id", async (req, res) => {
   const id = Number(req.params.id);
   const { room, price } = req.body;
-
-  if (
-    !room ||
-    price === undefined ||
-    price === "" ||
-    !Number.isFinite(Number(price)) ||
-    Number(price) < 0
-  ) {
-    return res.status(400).json({
-      message: "Please provide a valid room and price.",
-    });
+  if (!room || price === undefined || price === "" || Number(price) < 0) {
+    return res
+      .status(400)
+      .json({ message: "Please provide a valid room and price." });
   }
-
   try {
     const [result] = await pool.query(
       "UPDATE rooms SET room_name = ?, price = ? WHERE id = ?",
       [room, Number(price), id],
     );
-
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Room not found." });
     }
-
     res.json({ id, room, price: Number(price) });
   } catch (err) {
     console.error(err);
@@ -87,16 +136,13 @@ app.put("/api/rooms/:id", async (req, res) => {
   }
 });
 
-// 4. Burahin ang room sa database
 app.delete("/api/rooms/:id", async (req, res) => {
   const id = Number(req.params.id);
   try {
     const [result] = await pool.query("DELETE FROM rooms WHERE id = ?", [id]);
-
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Room not found." });
     }
-
     res.json({ message: "Room deleted successfully." });
   } catch (err) {
     console.error(err);
@@ -105,9 +151,8 @@ app.delete("/api/rooms/:id", async (req, res) => {
 });
 
 // ==========================================
-// RESERVATIONS API (Nakakonekta na sa db.js mo)
+// RESERVATIONS API
 // ==========================================
-
 const fields = {
   guestName: "guest_name",
   email: "email",
