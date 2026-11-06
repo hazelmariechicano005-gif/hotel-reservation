@@ -597,27 +597,36 @@ export default function HotelInfo({
     setFormData((prev) => ({ ...prev, paymentMethod: method }));
   };
 
-  const handleSubmitBooking = (e) => {
+  // Naka-konekta na direkta sa Node.js / XAMPP Database API
+  const handleSubmitBooking = async (e) => {
     e.preventDefault();
     if (!datesValid) return;
-    const existingBookings = JSON.parse(
-      localStorage.getItem("hotel_reservations") || "[]",
-    );
-    const reservationData = {
-      id: "RES-" + Date.now().toString().slice(-6),
-      ...formData,
-      nights,
-      totalAmount,
-      status: "Confirmed Booking",
-      createdAt: new Date().toISOString(),
-    };
 
-    localStorage.setItem(
-      "hotel_reservations",
-      JSON.stringify([reservationData, ...existingBookings]),
-    );
+    try {
+      const reservationData = {
+        id: "RES-" + Date.now().toString().slice(-6),
+        ...formData,
+        nights,
+        totalAmount,
+        status: "Pending",
+        userId: user?.uid || null,
+      };
 
-    setBookingReceipt(reservationData);
+      const response = await fetch("http://localhost:8080/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reservationData),
+      });
+
+      if (!response.ok) throw new Error("Failed to save reservation");
+
+      setBookingReceipt(reservationData);
+    } catch (err) {
+      console.error("Error saving reservation:", err);
+      alert(
+        "May error sa pag-save ng reservation sa database. Siguraduhing buhay ang server at database.",
+      );
+    }
   };
 
   const handleCloseModal = () => {
@@ -1101,7 +1110,7 @@ export default function HotelInfo({
             <strong>Phone:</strong> +63 (043) 123-4567
           </p>
           <p>
-            <strong>Email:</strong> bongabongviewhotel@gmail.com
+            <strong>Email:</strong> divaahotelroxas@gmail.com
           </p>
         </div>
       </section>
@@ -1196,7 +1205,7 @@ export default function HotelInfo({
                     fontSize: "1.05rem",
                   }}
                 >
-                  Booking confirmed
+                  Booking confirmed and saved to database!
                 </div>
 
                 <div
@@ -1280,8 +1289,8 @@ export default function HotelInfo({
                     marginTop: "15px",
                   }}
                 >
-                  Thank you for booking with DIVAA HOTEL in ROXAS! A
-                  confirmation has been stored in your account.
+                  Thank you for booking with DIVAA HOTEL in ROXAS! Na-save na
+                  ito sa database.
                 </p>
 
                 <button
