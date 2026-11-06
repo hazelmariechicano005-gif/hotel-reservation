@@ -1,11 +1,11 @@
-// db.js
-import mysql from "mysql2/promise";
+const mysql = require("mysql2/promise");
 
-export const pool = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "", // walang password ang default ng XAMPP
-  database: "divaa_hotel", // palitan kung iba ang pangalan ng database mo
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || "localhost",
+  port: Number(process.env.DB_PORT) || 3306,
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "divaa_hotel",
   waitForConnections: true,
   connectionLimit: 10,
 });
@@ -15,4 +15,4 @@ pool
   .then(() => console.log("MySQL connected"))
   .catch((err) => console.error("MySQL error:", err.message));
 
-export default pool;
+module.exports = pool;
