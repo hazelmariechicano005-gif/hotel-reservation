@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 
+const API = "http://localhost:8080/api/reservations";
+
 export default function AdminDashboard({ onLogout, currentUser }) {
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -30,32 +32,44 @@ export default function AdminDashboard({ onLogout, currentUser }) {
     loadReservations();
   }, []);
 
-  const loadReservations = () => {
-    const data = JSON.parse(localStorage.getItem("hotel_reservations") || "[]");
-    setReservations(data);
+  const loadReservations = async () => {
+    try {
+      const res = await fetch(API);
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const data = await res.json();
+      setReservations(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load reservations:", err);
+    }
   };
 
-  const saveToStorage = (data) => {
-    setReservations(data);
-    localStorage.setItem("hotel_reservations", JSON.stringify(data));
-  };
+  const sendJson = (url, method, data) =>
+    fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCreateBooking = (e) => {
+  const handleCreateBooking = async (e) => {
     e.preventDefault();
-    const newReservation = {
-      id: "RES-" + Date.now().toString().slice(-6),
-      ...formData,
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [newReservation, ...reservations];
-    saveToStorage(updated);
-    setIsAddModalOpen(false);
-    setFormData(emptyForm);
+    try {
+      const res = await sendJson(API, "POST", {
+        id: "RES-" + Date.now().toString().slice(-6),
+        ...formData,
+      });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      await loadReservations();
+      setIsAddModalOpen(false);
+      setFormData(emptyForm);
+    } catch (err) {
+      console.error(err);
+      alert("Hindi na-save ang booking. Subukan ulit.");
+    }
   };
 
   const handleOpenEdit = (res) => {
@@ -73,32 +87,42 @@ export default function AdminDashboard({ onLogout, currentUser }) {
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateBooking = (e) => {
+  const handleUpdateBooking = async (e) => {
     e.preventDefault();
-    const updated = reservations.map((res) =>
-      res.id === editingId ? { ...res, ...formData } : res,
-    );
-    saveToStorage(updated);
-    setIsEditModalOpen(false);
-    setEditingId(null);
-    setFormData(emptyForm);
+    try {
+      const res = await sendJson(`${API}/${editingId}`, "PUT", formData);
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      await loadReservations();
+      setIsEditModalOpen(false);
+      setEditingId(null);
+      setFormData(emptyForm);
+    } catch (err) {
+      console.error(err);
+      alert("Hindi na-update ang booking. Subukan ulit.");
+    }
   };
 
-  const handleStatusQuickChange = (id, newStatus) => {
-    const updated = reservations.map((res) =>
-      res.id === id ? { ...res, status: newStatus } : res,
-    );
-    saveToStorage(updated);
+  const handleStatusQuickChange = async (id, newStatus) => {
+    try {
+      await sendJson(`${API}/${id}`, "PUT", { status: newStatus });
+      await loadReservations();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleDeleteBooking = (id) => {
+  const handleDeleteBooking = async (id) => {
     if (
       window.confirm(
         "Sigurado ka bang gusto mong burahin ang reservation na ito?",
       )
     ) {
-      const updated = reservations.filter((res) => res.id !== id);
-      saveToStorage(updated);
+      try {
+        await fetch(`${API}/${id}`, { method: "DELETE" });
+        await loadReservations();
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
@@ -793,7 +817,7 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                         )
                         .filter(
                           (r) =>
-                            r.guestName
+                            (r.guestName || "")
                               .toLowerCase()
                               .includes(searchQuery.toLowerCase()) ||
                             r.id
