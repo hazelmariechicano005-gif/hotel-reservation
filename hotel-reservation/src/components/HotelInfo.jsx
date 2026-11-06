@@ -757,7 +757,7 @@ export default function HotelInfo({
         id="home"
         style={{
           backgroundImage:
-            "url('https://www.travelorientalmindoro.ph/uploads/places/173/gallery/20251211023658_6d782088.jpg')",
+            "url('https://images.unsplash.com/photo-1765812515434-6a0f0fc38bb6?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           width: "100%",
