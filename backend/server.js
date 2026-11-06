@@ -1,87 +1,171 @@
 const express = require("express");
 const cors = require("cors");
-const mysql = require("mysql2");
+
+let mysql;
+try {
+  mysql = require("mysql2");
+} catch (err) {
+  mysql = require("mysql");
+}
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// ==========================================
-// DIRECT DATABASE CONNECTION (XAMPP MySQL)
-// ==========================================
-const pool = mysql
-  .createPool({
-    host: "localhost",
-    user: "root",
-    password: "", // Default XAMPP password ay walang laman
-    database: "divaa_hotel_db",
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-  })
-  .promise();
+const rawPool = mysql.createPool({
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "divaa_hotel_db",
+  waitForConnections: true,
+  connectionLimit: 10,
+});
 
-// ==========================================
-// USERS API (Sign-in & Register)
-// ==========================================
-app.post("/api/register", async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res
-      .status(400)
-      .json({ message: "Please provide username and password." });
-  }
-  try {
-    const [result] = await pool.query(
-      "INSERT INTO users (username, password, role) VALUES (?, ?, 'user')",
-      [username, password],
-    );
-    res
-      .status(201)
-      .json({
-        ok: true,
-        userId: result.insertId,
-        message: "User registered successfully!",
+const pool = {
+  query: (sql, params = []) =>
+    new Promise((resolve, reject) => {
+      rawPool.query(sql, params, (err, results) => {
+        if (err) reject(err);
+        else resolve([results]);
       });
-  } catch (err) {
-    console.error(err);
-    if (err.code === "ER_DUP_ENTRY") {
-      return res.status(400).json({ message: "Username already exists." });
-    }
-    res.status(500).json({ message: "Failed to register user." });
-  }
-});
+    }),
+};
 
-app.post("/api/login", async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res
-      .status(400)
-      .json({ message: "Please provide username and password." });
-  }
-  try {
-    const [rows] = await pool.query(
-      "SELECT * FROM users WHERE username = ? AND password = ?",
-      [username, password],
+const reservationColumns = {
+  guest_name: "VARCHAR(100) NULL",
+  email: "VARCHAR(100) NULL",
+  phone: "VARCHAR(30) NULL",
+  room_type: "VARCHAR(100) NULL",
+  guests: "INT NULL DEFAULT 1",
+  check_in: "DATE NULL",
+  check_out: "DATE NULL",
+  nights: "INT NULL DEFAULT 1",
+  total_amount: "INT NULL DEFAULT 0",
+  payment_method: "VARCHAR(30) NULL",
+  notes: "TEXT NULL",
+  status: "VARCHAR(30) NULL DEFAULT 'Pending'",
+  user_id: "VARCHAR(128) NULL",
+  created_at: "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP",
+};
+
+const userColumns = {
+  uid: "VARCHAR(128) NULL",
+  name: "VARCHAR(100) NULL",
+  email: "VARCHAR(100) NULL",
+  role: "VARCHAR(20) NOT NULL DEFAULT 'customer'",
+  photo_url: "TEXT NULL",
+  created_at: "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP",
+  last_login: "TIMESTAMP NULL DEFAULT NULL",
+};
+
+async function columnInfo(table, column) {
+  const [rows] = await pool.query(
+    `SELECT DATA_TYPE AS dataType FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [table, column],
+  );
+  return rows[0];
+}
+
+async function addColumnIfMissing(table, column, definition) {
+  if (!(await columnInfo(table, column))) {
+    await pool.query(
+      `ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`,
     );
-    if (rows.length === 0) {
-      return res.status(401).json({ message: "Invalid username or password." });
+  }
+}
+
+async function relaxOtherColumns(table, supplied) {
+  const [rows] = await pool.query(
+    `SELECT COLUMN_NAME AS name, COLUMN_TYPE AS type FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND IS_NULLABLE = 'NO'
+     AND COLUMN_DEFAULT IS NULL AND COLUMN_KEY <> 'PRI'
+     AND EXTRA NOT LIKE '%auto_increment%'`,
+    [table],
+  );
+  for (const row of rows) {
+    if (!supplied.includes(row.name)) {
+      await pool.query(
+        `ALTER TABLE \`${table}\` MODIFY \`${row.name}\` ${row.type} NULL`,
+      );
     }
-    const user = rows[0];
-    res.json({
-      ok: true,
-      user: { id: user.id, username: user.username, role: user.role },
-    });
+  }
+}
+
+async function ensureSchema() {
+  await pool.query(
+    "CREATE TABLE IF NOT EXISTS reservations (id VARCHAR(20) NOT NULL PRIMARY KEY)",
+  );
+  const idInfo = await columnInfo("reservations", "id");
+  if (!idInfo) {
+    await pool.query(
+      "ALTER TABLE reservations ADD COLUMN id VARCHAR(20) NULL, ADD UNIQUE KEY uq_reservation_id (id)",
+    );
+  } else if (idInfo.dataType !== "varchar") {
+    await pool.query("ALTER TABLE reservations MODIFY id VARCHAR(20) NOT NULL");
+  }
+  for (const [column, definition] of Object.entries(reservationColumns)) {
+    await addColumnIfMissing("reservations", column, definition);
+  }
+  await relaxOtherColumns("reservations", [
+    "id",
+    ...Object.keys(reservationColumns),
+  ]);
+
+  await pool.query(
+    "CREATE TABLE IF NOT EXISTS users (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY)",
+  );
+  for (const [column, definition] of Object.entries(userColumns)) {
+    await addColumnIfMissing("users", column, definition);
+  }
+  const roleInfo = await columnInfo("users", "role");
+  if (roleInfo && roleInfo.dataType === "enum") {
+    await pool.query(
+      "ALTER TABLE users MODIFY role VARCHAR(20) NOT NULL DEFAULT 'customer'",
+    );
+  }
+  await relaxOtherColumns("users", Object.keys(userColumns));
+}
+
+app.post("/api/users/sync", async (req, res) => {
+  const { uid, name, email, photoURL, role } = req.body;
+  if (!uid) {
+    return res.status(400).json({ message: "uid is required." });
+  }
+  const safeRole = role === "admin" ? "admin" : "customer";
+  try {
+    const [existing] = await pool.query(
+      "SELECT id FROM users WHERE uid = ? LIMIT 1",
+      [uid],
+    );
+    if (existing.length > 0) {
+      await pool.query(
+        "UPDATE users SET name = ?, email = ?, role = ?, photo_url = ?, last_login = ? WHERE uid = ?",
+        [name || "", email || "", safeRole, photoURL || null, new Date(), uid],
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO users (uid, name, email, role, photo_url, created_at, last_login)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          uid,
+          name || "",
+          email || "",
+          safeRole,
+          photoURL || null,
+          new Date(),
+          new Date(),
+        ],
+      );
+    }
+    res.json({ ok: true });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Login failed." });
+    res.status(500).json({ message: "Failed to save user." });
   }
 });
 
-// ==========================================
-// ROOMS API
-// ==========================================
 app.get("/api/rooms", async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -150,9 +234,6 @@ app.delete("/api/rooms/:id", async (req, res) => {
   }
 });
 
-// ==========================================
-// RESERVATIONS API
-// ==========================================
 const fields = {
   guestName: "guest_name",
   email: "email",
@@ -193,6 +274,7 @@ async function insertReservation(body) {
     notes: body.notes || null,
     status: body.status || "Pending",
     user_id: body.userId || null,
+    created_at: new Date(),
   };
 
   const cols = Object.keys(data);
@@ -295,6 +377,15 @@ app.delete("/api/reservations/:id", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+
+ensureSchema()
+  .then(() => {
+    console.log("MySQL connected: tables ready");
+    app.listen(PORT, () => {
+      console.log(`Server running at http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Database setup failed:", err.message);
+    process.exit(1);
+  });
