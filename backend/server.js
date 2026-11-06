@@ -7,20 +7,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-let rooms = [
-  { id: 1, room: "room01", price: 150 },
-  { id: 2, room: "roomB10", price: 170 },
-  { id: 3, room: "roomC67", price: 120 },
-  { id: 4, room: "roomD22", price: 200 },
-  { id: 5, room: "roomE05", price: 180 },
-  { id: 6, room: "roomF99", price: 250 },
-];
+// ==========================================
+// ROOMS API (Naka-konekta na sa Database)
+// ==========================================
 
-app.get("/api/rooms", (req, res) => {
-  res.json(rooms);
+// 1. Kunin lahat ng rooms mula sa database
+app.get("/api/rooms", async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT id, room_name AS room, price FROM rooms ORDER BY id DESC",
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to load rooms from database." });
+  }
 });
 
-app.post("/api/rooms", (req, res) => {
+// 2. Magdagdag ng bagong room sa database
+app.post("/api/rooms", async (req, res) => {
   const { room, price } = req.body;
 
   if (!room || price === undefined || price === "" || Number(price) < 0) {
@@ -29,27 +34,29 @@ app.post("/api/rooms", (req, res) => {
     });
   }
 
-  const newRoom = {
-    id: rooms.length
-      ? Math.max(...rooms.map((item) => Number(item.id))) + 1
-      : 1,
-    room: room,
-    price: Number(price),
-  };
+  try {
+    const [result] = await pool.query(
+      "INSERT INTO rooms (room_name, price) VALUES (?, ?)",
+      [room, Number(price)],
+    );
 
-  rooms.push(newRoom);
-  res.status(201).json(newRoom);
+    const newRoom = {
+      id: result.insertId,
+      room: room,
+      price: Number(price),
+    };
+
+    res.status(201).json(newRoom);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to save room to database." });
+  }
 });
 
-app.put("/api/rooms/:id", (req, res) => {
+// 3. I-update ang room sa database
+app.put("/api/rooms/:id", async (req, res) => {
   const id = Number(req.params.id);
   const { room, price } = req.body;
-
-  const index = rooms.findIndex((item) => Number(item.id) === id);
-
-  if (index === -1) {
-    return res.status(404).json({ message: "Room not found." });
-  }
 
   if (
     !room ||
@@ -63,27 +70,43 @@ app.put("/api/rooms/:id", (req, res) => {
     });
   }
 
-  rooms[index] = {
-    ...rooms[index],
-    room,
-    price: Number(price),
-  };
+  try {
+    const [result] = await pool.query(
+      "UPDATE rooms SET room_name = ?, price = ? WHERE id = ?",
+      [room, Number(price), id],
+    );
 
-  res.json(rooms[index]);
-});
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Room not found." });
+    }
 
-app.delete("/api/rooms/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const exists = rooms.some((item) => Number(item.id) === id);
-
-  if (!exists) {
-    return res.status(404).json({ message: "Room not found." });
+    res.json({ id, room, price: Number(price) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to update room." });
   }
-
-  rooms = rooms.filter((item) => Number(item.id) !== id);
-
-  res.json({ message: "Room deleted successfully." });
 });
+
+// 4. Burahin ang room sa database
+app.delete("/api/rooms/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const [result] = await pool.query("DELETE FROM rooms WHERE id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Room not found." });
+    }
+
+    res.json({ message: "Room deleted successfully." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to delete room." });
+  }
+});
+
+// ==========================================
+// RESERVATIONS API (Nakakonekta na sa db.js mo)
+// ==========================================
 
 const fields = {
   guestName: "guest_name",
