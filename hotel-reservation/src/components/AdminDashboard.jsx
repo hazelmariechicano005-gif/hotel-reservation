@@ -341,6 +341,7 @@ export default function AdminDashboard({ onLogout, currentUser }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [reservations, setReservations] = useState([]);
   const [loadError, setLoadError] = useState("");
+  const [lastLoaded, setLastLoaded] = useState("");
   const [arrivalsTab, setArrivalsTab] = useState("Arrivals");
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -358,18 +359,20 @@ export default function AdminDashboard({ onLogout, currentUser }) {
 
   const loadReservations = useCallback(async () => {
     try {
-      const res = await fetch(API);
+      const res = await fetch(API, { cache: "no-store" });
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const data = await res.json();
+      console.log("GET /api/reservations ->", data);
       const list = Array.isArray(data)
         ? data
         : data.data || data.rows || data.reservations || [];
       setReservations(list.map(normalizeReservation));
+      setLastLoaded(new Date().toLocaleTimeString());
       setLoadError("");
     } catch (err) {
       console.error("Failed to load reservations:", err);
       setLoadError(
-        "Hindi ma-load ang reservations. Siguraduhing buhay ang server sa port 8080.",
+        `Hindi ma-load ang reservations mula sa ${API} (${err.message}). Siguraduhing buhay ang server sa port 8080.`,
       );
     }
   }, []);
@@ -1057,6 +1060,18 @@ export default function AdminDashboard({ onLogout, currentUser }) {
 
           {activeTab === "Bookings" && (
             <div style={{ ...card, padding: "28px" }}>
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: "#607274",
+                  marginBottom: "14px",
+                }}
+              >
+                {lastLoaded
+                  ? `Loaded ${reservations.length} reservation(s) from the database at ${lastLoaded}`
+                  : "Loading reservations..."}
+              </div>
+
               <div
                 style={{
                   display: "flex",
