@@ -134,7 +134,7 @@ export default function AdminDashboard({ onLogout, currentUser }) {
         display: "flex",
         minHeight: "100vh",
         fontFamily: "'Inter', 'Segoe UI', Roboto, sans-serif",
-        backgroundColor: "lightgray",
+        backgroundColor: "#2f4f4f",
         color: "#333",
       }}
     >
@@ -168,7 +168,7 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                   color: "#ffffff",
                 }}
               >
-                Bongabong View Hotel and Bistro
+                DIVAA HOTEL in ROXAS
               </h3>
               <span
                 style={{

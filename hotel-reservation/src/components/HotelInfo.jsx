@@ -699,7 +699,7 @@ export default function HotelInfo({
         }}
       >
         <h2 style={{ fontWeight: "700", color: "#f3ead7", margin: 0 }}>
-          BONGABONG VIEW HOTEL AND BISTRO
+          DIVAA HOTEL in ROXAS
         </h2>
         <nav style={{ display: "flex", alignItems: "center" }}>
           <a href="#home" style={navLinkStyle}>
@@ -792,7 +792,7 @@ export default function HotelInfo({
               margin: "10px 0",
             }}
           >
-            Experience Comfort in the Heart of Bongabong View Hotel And Bistro
+            Experience Comfort in the Heart of DIVAA HOTEL in ROXAS
           </h1>
           <p style={{ fontSize: "1.2rem", color: "#e6dcc6" }}>
             Immaculate accommodations, seamless booking, and exceptional
@@ -1095,7 +1095,7 @@ export default function HotelInfo({
         <h2 style={{ color: "#ffffff", marginBottom: "20px" }}>Contact Us</h2>
         <div style={{ marginTop: "20px", lineHeight: "1.8", color: "#e6dcc6" }}>
           <p>
-            <strong>Address:</strong> Bongabong, Oriental Mindoro, Philippines
+            <strong>Address:</strong> Roxas, Oriental Mindoro, Philippines
           </p>
           <p>
             <strong>Phone:</strong> +63 (043) 123-4567
@@ -1121,8 +1121,8 @@ export default function HotelInfo({
         }}
       >
         <p style={{ margin: 0 }}>
-          © {new Date().getFullYear()} BONGABONG VIEW HOTEL AND BISTRO. All
-          rights reserved.
+          © {new Date().getFullYear()} DIVAA HOTEL in ROXAS. All rights
+          reserved.
         </p>
       </footer>
 
@@ -1216,7 +1216,7 @@ export default function HotelInfo({
                     }}
                   >
                     <h3 style={{ margin: 0, color: "#1d3f40" }}>
-                      BONGABONG VIEW HOTEL AND BISTRO
+                      DIVAA HOTEL in ROXAS
                     </h3>
                     <p
                       style={{
@@ -1280,7 +1280,7 @@ export default function HotelInfo({
                     marginTop: "15px",
                   }}
                 >
-                  Thank you for booking with BONGABONG VIEW HOTEL AND BISTRO! A
+                  Thank you for booking with DIVAA HOTEL in ROXAS! A
                   confirmation has been stored in your account.
                 </p>
 
