@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 
 const API = "http://localhost:8080/api/reservations";
 
-// ---------- Rooms (dapat tugma sa HotelInfo) ----------
 const ROOMS = [
   { name: "Economy Fan Room", price: 800, qty: 4 },
   { name: "Solo Room", price: 1000, qty: 4 },
@@ -19,7 +18,6 @@ const ROOMS = [
 const TOTAL_ROOMS = ROOMS.reduce((s, r) => s + r.qty, 0);
 const PAYMENTS = ["GCash", "Cash", "Bank Transfer", "Credit/Debit Card"];
 
-// ---------- Helpers ----------
 const pick = (r, ...keys) => {
   for (const k of keys) if (r[k] !== undefined && r[k] !== null) return r[k];
   return "";
@@ -27,7 +25,6 @@ const pick = (r, ...keys) => {
 
 const pad = (n) => String(n).padStart(2, "0");
 
-// Ginagawang "YYYY-MM-DD" (local time) para hindi umurong ang petsa dahil sa timezone
 const toDate = (v) => {
   if (!v) return "";
   if (v instanceof Date) {
@@ -58,7 +55,6 @@ const diffNights = (a, b) => {
 
 const money = (n) => "₱" + Number(n || 0).toLocaleString();
 
-// Tumatanggap ng snake_case (database) at camelCase
 const normalizeReservation = (r) => ({
   id: String(pick(r, "id", "reservation_id", "reservationId", "_id")),
   guestName: pick(r, "guestName", "guest_name", "name"),
@@ -94,7 +90,6 @@ const emptyForm = {
   status: "Pending",
 };
 
-// ---------- Styles ----------
 const card = {
   backgroundColor: "#ffffff",
   padding: "24px",
@@ -120,7 +115,6 @@ const labelStyle = { fontSize: "0.82rem", fontWeight: "600", color: "#444" };
 const statusColor = (s) =>
   s === "Confirmed" ? "#2e7d32" : s === "Cancelled" ? "#b22222" : "#d97706";
 
-// ---------- Small components (nasa labas para hindi mawala ang focus sa input) ----------
 function Field({ label, children, style }) {
   return (
     <div style={{ marginBottom: "12px", ...style }}>
@@ -342,7 +336,6 @@ function BookingModal({
   );
 }
 
-// ---------- Main ----------
 export default function AdminDashboard({ onLogout, currentUser }) {
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -363,7 +356,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
     return { year: d.getFullYear(), month: d.getMonth() };
   });
 
-  // ----- Load -----
   const loadReservations = useCallback(async () => {
     try {
       const res = await fetch(API);
@@ -388,7 +380,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
     return () => clearInterval(timer);
   }, [loadReservations]);
 
-  // ----- Form helpers -----
   const sendJson = (url, method, data) =>
     fetch(url, {
       method,
@@ -493,15 +484,16 @@ export default function AdminDashboard({ onLogout, currentUser }) {
       )
     ) {
       try {
-        await fetch(`${API}/${id}`, { method: "DELETE" });
+        const res = await fetch(`${API}/${id}`, { method: "DELETE" });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
         await loadReservations();
       } catch (err) {
         console.error(err);
+        alert("Hindi nabura sa database. Tingnan ang server terminal.");
       }
     }
   };
 
-  // ----- Stats -----
   const today = todayStr();
   const active = reservations.filter((r) => r.status !== "Cancelled");
   const staying = (r) => r.checkIn <= today && today < r.checkOut;
@@ -542,7 +534,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
       );
     });
 
-  // ----- Calendar -----
   const { year, month } = calMonth;
   const firstWeekday = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -757,7 +748,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
             </div>
           )}
 
-          {/* ---------------- Dashboard ---------------- */}
           {activeTab === "Dashboard" && (
             <div
               style={{
@@ -930,7 +920,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
             </div>
           )}
 
-          {/* ---------------- Calendar ---------------- */}
           {activeTab === "Calendar" && (
             <div style={card}>
               <div
@@ -1066,7 +1055,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
             </div>
           )}
 
-          {/* ---------------- Bookings ---------------- */}
           {activeTab === "Bookings" && (
             <div style={{ ...card, padding: "28px" }}>
               <div
@@ -1331,7 +1319,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
             </div>
           )}
 
-          {/* ---------------- Clients ---------------- */}
           {activeTab === "Clients" && (
             <div style={{ ...card, padding: "28px" }}>
               <h3 style={sectionTitle}>Client Directory</h3>
@@ -1377,7 +1364,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
             </div>
           )}
 
-          {/* ---------------- Rooms ---------------- */}
           {activeTab === "Rooms" && (
             <div style={{ ...card, padding: "28px" }}>
               <h3 style={{ ...sectionTitle, marginBottom: "8px" }}>
@@ -1437,7 +1423,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
             </div>
           )}
 
-          {/* ---------------- Discounts ---------------- */}
           {activeTab === "Discounts" && (
             <div style={{ ...card, padding: "28px" }}>
               <h3 style={{ ...sectionTitle, marginBottom: "8px" }}>
@@ -1449,7 +1434,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
             </div>
           )}
 
-          {/* ---------------- Extras ---------------- */}
           {activeTab === "Extras" && (
             <div style={{ ...card, padding: "28px" }}>
               <h3 style={{ ...sectionTitle, marginBottom: "8px" }}>
