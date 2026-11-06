@@ -28,7 +28,7 @@ async function syncUserToDatabase(profile) {
       }),
     });
   } catch (error) {
-    console.warn("Could not save user to database:", error);
+    console.warn("Could not sync user:", error);
   }
 }
 

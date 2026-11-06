@@ -273,7 +273,6 @@ const emptyForm = {
   notes: "",
 };
 
-// Mga kwarto (dapat tugma sa ROOMS ng AdminDashboard)
 const rooms = [
   {
     name: "Economy Fan Room",
@@ -596,7 +595,6 @@ export default function HotelInfo({
     setFormData((prev) => ({ ...prev, paymentMethod: method }));
   };
 
-  // Nagse-save sa Node.js / XAMPP Database API
   const handleSubmitBooking = async (e) => {
     e.preventDefault();
     if (!datesValid || isSaving) return;
@@ -635,7 +633,7 @@ export default function HotelInfo({
     } catch (err) {
       console.error("Error saving reservation:", err);
       alert(
-        "May error sa pag-save ng reservation sa database. Siguraduhing buhay ang server at database.",
+        "May error sa pag-save ng reservation. Siguraduhing buhay ang server.",
       );
     } finally {
       setIsSaving(false);

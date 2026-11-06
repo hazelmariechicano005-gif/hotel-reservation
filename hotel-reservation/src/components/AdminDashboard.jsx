@@ -362,7 +362,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
       const res = await fetch(API, { cache: "no-store" });
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const data = await res.json();
-      console.log("GET /api/reservations ->", data);
       const list = Array.isArray(data)
         ? data
         : data.data || data.rows || data.reservations || [];
@@ -372,14 +371,14 @@ export default function AdminDashboard({ onLogout, currentUser }) {
     } catch (err) {
       console.error("Failed to load reservations:", err);
       setLoadError(
-        `Hindi ma-load ang reservations mula sa ${API} (${err.message}). Siguraduhing buhay ang server sa port 8080.`,
+        `Hindi ma-load ang reservations mula sa ${API} (${err.message}). Siguraduhing buhay ang server.`,
       );
     }
   }, []);
 
   useEffect(() => {
     loadReservations();
-    const timer = setInterval(loadReservations, 10000); // auto-refresh every 10s
+    const timer = setInterval(loadReservations, 10000);
     return () => clearInterval(timer);
   }, [loadReservations]);
 
@@ -492,7 +491,7 @@ export default function AdminDashboard({ onLogout, currentUser }) {
         await loadReservations();
       } catch (err) {
         console.error(err);
-        alert("Hindi nabura sa database. Tingnan ang server terminal.");
+        alert("Hindi nabura. Subukan ulit.");
       }
     }
   };
@@ -570,7 +569,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
         color: "#333",
       }}
     >
-      {/* Sidebar */}
       <div
         style={{
           width: sidebarOpen ? "250px" : "75px",
@@ -678,7 +676,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
         </div>
       </div>
 
-      {/* Main */}
       <div
         style={{
           flex: 1,
@@ -1068,7 +1065,7 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                 }}
               >
                 {lastLoaded
-                  ? `Loaded ${reservations.length} reservation(s) from the database at ${lastLoaded}`
+                  ? `Loaded ${reservations.length} reservation(s) at ${lastLoaded}`
                   : "Loading reservations..."}
               </div>
 
