@@ -1,4 +1,3 @@
-// File: AdminDashboard.jsx
 import React, { useState, useEffect } from "react";
 
 export default function AdminDashboard({ onLogout, currentUser }) {
@@ -135,11 +134,10 @@ export default function AdminDashboard({ onLogout, currentUser }) {
         display: "flex",
         minHeight: "100vh",
         fontFamily: "'Inter', 'Segoe UI', Roboto, sans-serif",
-        backgroundColor: "#f4f6f9",
+        backgroundColor: "lightgray",
         color: "#333",
       }}
     >
-      {/* Sidebar */}
       <div
         style={{
           width: sidebarOpen ? "250px" : "75px",
@@ -170,7 +168,7 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                   color: "#ffffff",
                 }}
               >
-                DIVAA HOTEL
+                Bongabong View Hotel and Bistro
               </h3>
               <span
                 style={{
@@ -259,7 +257,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
         </div>
       </div>
 
-      {/* Main Content */}
       <div
         style={{
           flex: 1,
@@ -268,7 +265,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
           overflowX: "hidden",
         }}
       >
-        {/* Top Header */}
         <div
           style={{
             height: "64px",
@@ -328,7 +324,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
           )}
         </div>
 
-        {/* Dynamic View Body */}
         <div style={{ padding: "28px", flex: 1 }}>
           {activeTab === "Dashboard" && (
             <div
@@ -527,7 +522,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
             </div>
           )}
 
-          {/* CALENDAR TAB (FULL INTERACTIVE GRID) */}
           {activeTab === "Calendar" && (
             <div
               style={{
@@ -643,7 +637,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
             </div>
           )}
 
-          {/* BOOKINGS TAB (CRUD MANAGEMENT) */}
           {activeTab === "Bookings" && (
             <div
               style={{
@@ -688,15 +681,15 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                       setIsAddModalOpen(true);
                     }}
                     style={{
-                      backgroundColor: "#2f4f4f",
-                      color: "white",
+                      backgroundColor: "whitesmoke",
+                      color: "black",
                       border: "none",
                       padding: "10px 18px",
                       borderRadius: "6px",
                       cursor: "pointer",
                       fontWeight: "600",
                       fontSize: "0.88rem",
-                      boxShadow: "0 2px 4px rgba(47,79,79,0.2)",
+                      boxShadow: "whitesmoke 0px 2px 4px rgba(0,0,0,0.1)",
                       transition: "all 0.2s ease",
                     }}
                   >
@@ -707,7 +700,7 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                     style={{
                       display: "flex",
                       gap: "4px",
-                      backgroundColor: "#f4f6f9",
+                      backgroundColor: "#121414",
                       padding: "3px",
                       borderRadius: "6px",
                     }}
@@ -739,7 +732,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                 </div>
               </div>
 
-              {/* READ Table */}
               <div style={{ overflowX: "auto" }}>
                 <table
                   style={{
@@ -1121,7 +1113,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
         </div>
       </div>
 
-      {/* CREATE MODAL */}
       {isAddModalOpen && (
         <div
           style={{
@@ -1359,8 +1350,8 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                   onClick={() => setIsAddModalOpen(false)}
                   style={{
                     padding: "8px 16px",
-                    border: "1px solid #dcdfe4",
-                    backgroundColor: "#fff",
+                    border: "1px solid #2f4f4f",
+                    backgroundColor: "#2f4f4f",
                     borderRadius: "4px",
                     cursor: "pointer",
                     fontWeight: "600",
@@ -1388,7 +1379,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
         </div>
       )}
 
-      {/* EDIT MODAL */}
       {isEditModalOpen && (
         <div
           style={{
