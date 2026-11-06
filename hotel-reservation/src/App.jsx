@@ -12,7 +12,7 @@ import Display from "./components/Display.jsx";
 import HotelInfo from "./components/HotelInfo.jsx";
 import { auth, db, googleProvider } from "./Firebase.js";
 
-const API_BASE = "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 async function syncUserToDatabase(profile) {
   try {

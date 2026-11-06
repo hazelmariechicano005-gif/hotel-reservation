@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 
-export default function AdminDashboard({ onLogout, currentUser }) {
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+export default function Display({ onLogout, user }) {
+  const currentUser = user;
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [reservations, setReservations] = useState([]);
@@ -28,16 +31,18 @@ export default function AdminDashboard({ onLogout, currentUser }) {
 
   useEffect(() => {
     loadReservations();
+    const timer = setInterval(loadReservations, 10000); // auto-refresh every 10s
+    return () => clearInterval(timer);
   }, []);
 
-  const loadReservations = () => {
-    const data = JSON.parse(localStorage.getItem("hotel_reservations") || "[]");
-    setReservations(data);
-  };
-
-  const saveToStorage = (data) => {
-    setReservations(data);
-    localStorage.setItem("hotel_reservations", JSON.stringify(data));
+  const loadReservations = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/reservations`);
+      if (!res.ok) throw new Error("Failed to load reservations");
+      setReservations(await res.json());
+    } catch (err) {
+      console.error("Load error:", err);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -45,17 +50,22 @@ export default function AdminDashboard({ onLogout, currentUser }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCreateBooking = (e) => {
+  const handleCreateBooking = async (e) => {
     e.preventDefault();
-    const newReservation = {
-      id: "RES-" + Date.now().toString().slice(-6),
-      ...formData,
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [newReservation, ...reservations];
-    saveToStorage(updated);
-    setIsAddModalOpen(false);
-    setFormData(emptyForm);
+    try {
+      const res = await fetch(`${API_BASE}/api/reservations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error("Failed to create reservation");
+      setIsAddModalOpen(false);
+      setFormData(emptyForm);
+      loadReservations();
+    } catch (err) {
+      alert("Hindi na-save ang reservation.");
+      console.error(err);
+    }
   };
 
   const handleOpenEdit = (res) => {
@@ -73,32 +83,52 @@ export default function AdminDashboard({ onLogout, currentUser }) {
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateBooking = (e) => {
+  const handleUpdateBooking = async (e) => {
     e.preventDefault();
-    const updated = reservations.map((res) =>
-      res.id === editingId ? { ...res, ...formData } : res,
-    );
-    saveToStorage(updated);
-    setIsEditModalOpen(false);
-    setEditingId(null);
-    setFormData(emptyForm);
+    try {
+      const res = await fetch(`${API_BASE}/api/reservations/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error("Failed to update reservation");
+      setIsEditModalOpen(false);
+      setEditingId(null);
+      setFormData(emptyForm);
+      loadReservations();
+    } catch (err) {
+      alert("Hindi na-update ang reservation.");
+      console.error(err);
+    }
   };
 
-  const handleStatusQuickChange = (id, newStatus) => {
-    const updated = reservations.map((res) =>
-      res.id === id ? { ...res, status: newStatus } : res,
-    );
-    saveToStorage(updated);
+  const handleStatusQuickChange = async (id, newStatus) => {
+    const current = reservations.find((r) => r.id === id);
+    if (!current) return;
+    try {
+      await fetch(`${API_BASE}/api/reservations/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...current, status: newStatus }),
+      });
+      loadReservations();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleDeleteBooking = (id) => {
+  const handleDeleteBooking = async (id) => {
     if (
       window.confirm(
         "Sigurado ka bang gusto mong burahin ang reservation na ito?",
       )
     ) {
-      const updated = reservations.filter((res) => res.id !== id);
-      saveToStorage(updated);
+      try {
+        await fetch(`${API_BASE}/api/reservations/${id}`, { method: "DELETE" });
+        loadReservations();
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
@@ -134,11 +164,10 @@ export default function AdminDashboard({ onLogout, currentUser }) {
         display: "flex",
         minHeight: "100vh",
         fontFamily: "'Inter', 'Segoe UI', Roboto, sans-serif",
-        backgroundColor: "#f4f6f9",
+        backgroundColor: "lightgray",
         color: "#333",
       }}
     >
-      {/* Sidebar */}
       <div
         style={{
           width: sidebarOpen ? "250px" : "75px",
@@ -169,7 +198,7 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                   color: "#ffffff",
                 }}
               >
-                DIVAA HOTEL
+                DIVAA HOTEL in Roxas
               </h3>
               <span
                 style={{
@@ -258,7 +287,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
         </div>
       </div>
 
-      {/* Main Content */}
       <div
         style={{
           flex: 1,
@@ -267,7 +295,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
           overflowX: "hidden",
         }}
       >
-        {/* Top Header */}
         <div
           style={{
             height: "64px",
@@ -321,13 +348,14 @@ export default function AdminDashboard({ onLogout, currentUser }) {
             >
               Administrator:{" "}
               <strong style={{ color: "#2f4f4f" }}>
-                {currentUser.displayName || currentUser.email}
+                {currentUser.name ||
+                  currentUser.displayName ||
+                  currentUser.email}
               </strong>
             </div>
           )}
         </div>
 
-        {/* Dynamic View Body */}
         <div style={{ padding: "28px", flex: 1 }}>
           {activeTab === "Dashboard" && (
             <div
@@ -526,7 +554,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
             </div>
           )}
 
-          {/* CALENDAR TAB (FULL INTERACTIVE GRID) */}
           {activeTab === "Calendar" && (
             <div
               style={{
@@ -642,7 +669,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
             </div>
           )}
 
-          {/* BOOKINGS TAB (CRUD MANAGEMENT) */}
           {activeTab === "Bookings" && (
             <div
               style={{
@@ -687,15 +713,15 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                       setIsAddModalOpen(true);
                     }}
                     style={{
-                      backgroundColor: "#2f4f4f",
-                      color: "white",
+                      backgroundColor: "whitesmoke",
+                      color: "black",
                       border: "none",
                       padding: "10px 18px",
                       borderRadius: "6px",
                       cursor: "pointer",
                       fontWeight: "600",
                       fontSize: "0.88rem",
-                      boxShadow: "0 2px 4px rgba(47,79,79,0.2)",
+                      boxShadow: "whitesmoke 0px 2px 4px rgba(0,0,0,0.1)",
                       transition: "all 0.2s ease",
                     }}
                   >
@@ -706,7 +732,7 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                     style={{
                       display: "flex",
                       gap: "4px",
-                      backgroundColor: "#f4f6f9",
+                      backgroundColor: "#121414",
                       padding: "3px",
                       borderRadius: "6px",
                     }}
@@ -738,7 +764,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                 </div>
               </div>
 
-              {/* READ Table */}
               <div style={{ overflowX: "auto" }}>
                 <table
                   style={{
@@ -1120,7 +1145,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
         </div>
       </div>
 
-      {/* CREATE MODAL */}
       {isAddModalOpen && (
         <div
           style={{
@@ -1358,8 +1382,8 @@ export default function AdminDashboard({ onLogout, currentUser }) {
                   onClick={() => setIsAddModalOpen(false)}
                   style={{
                     padding: "8px 16px",
-                    border: "1px solid #dcdfe4",
-                    backgroundColor: "#fff",
+                    border: "1px solid #2f4f4f",
+                    backgroundColor: "#2f4f4f",
                     borderRadius: "4px",
                     cursor: "pointer",
                     fontWeight: "600",
@@ -1387,7 +1411,6 @@ export default function AdminDashboard({ onLogout, currentUser }) {
         </div>
       )}
 
-      {/* EDIT MODAL */}
       {isEditModalOpen && (
         <div
           style={{
