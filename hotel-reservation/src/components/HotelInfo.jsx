@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import LoginModal from "./LoginModal";
 
+const API = "http://localhost:8080/api/reservations";
+
 const hotelStyles = `
 .bb-chip {
   border: 1px solid #1d3f40;
@@ -271,6 +273,212 @@ const emptyForm = {
   notes: "",
 };
 
+// Mga kwarto (dapat tugma sa ROOMS ng AdminDashboard)
+const rooms = [
+  {
+    name: "Economy Fan Room",
+    category: "Standard",
+    price: 800,
+    capacity: 2,
+    bed: "1 Double Bed",
+    image:
+      "https://images.unsplash.com/photo-1595576508898-0ad5c879a061?auto=format&fit=crop&w=1000&q=80",
+    description:
+      "A budget-friendly room with electric fan, private bathroom, and free Wi-Fi for a simple overnight stay.",
+  },
+  {
+    name: "Solo Room",
+    category: "Solo",
+    price: 1000,
+    capacity: 1,
+    bed: "1 Single Bed",
+    image:
+      "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1000&q=80",
+    description:
+      "Perfect for solo travelers looking for a comfortable and affordable air-conditioned stay.",
+  },
+  {
+    name: "Standard Room",
+    category: "Standard",
+    price: 1200,
+    capacity: 2,
+    bed: "1 Queen Bed",
+    image:
+      "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1000&q=80",
+    description:
+      "A cozy and clean room equipped with air conditioning, a private bathroom, complimentary Wi-Fi, and a flat-screen TV.",
+  },
+  {
+    name: "Twin Room",
+    category: "Standard",
+    price: 1400,
+    capacity: 2,
+    bed: "2 Single Beds",
+    image:
+      "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1000&q=80",
+    description:
+      "Two separate single beds, ideal for friends, coworkers, or siblings traveling together.",
+  },
+  {
+    name: "Deluxe Queen Room",
+    category: "Deluxe",
+    price: 1600,
+    capacity: 2,
+    bed: "1 Queen Bed + Work Desk",
+    image:
+      "https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1000&q=80",
+    description:
+      "A spacious air-conditioned room featuring a functional work desk, a mini refrigerator, and complimentary artisan coffee.",
+  },
+  {
+    name: "Triple Room",
+    category: "Family",
+    price: 2000,
+    capacity: 3,
+    bed: "1 Queen + 1 Single Bed",
+    image:
+      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1000&q=80",
+    description:
+      "A comfortable room for three guests with a queen bed, a single bed, and a small lounge corner.",
+  },
+  {
+    name: "Family Suite Room",
+    category: "Family",
+    price: 2400,
+    capacity: 4,
+    bed: "2 Queen Beds",
+    image:
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1000&q=80",
+    description:
+      "Designed for families or groups, offering two large beds, an expansive bathroom, and a comfortable seating area.",
+  },
+  {
+    name: "Honeymoon Suite",
+    category: "Suite",
+    price: 2800,
+    capacity: 2,
+    bed: "1 King Bed",
+    image:
+      "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1000&q=80",
+    description:
+      "A romantic suite with a king bed, private balcony, soaking bathtub, and breakfast for two.",
+  },
+  {
+    name: "Barkada Group Room",
+    category: "Group",
+    price: 3200,
+    capacity: 6,
+    bed: "3 Bunk Beds / Twin Beds",
+    image:
+      "https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1000&q=80",
+    description:
+      "An economical group accommodation for up to six persons, ideal for team trips, student outings, and gatherings.",
+  },
+  {
+    name: "Executive Suite",
+    category: "Suite",
+    price: 3800,
+    capacity: 3,
+    bed: "1 King Bed + Sofa Bed",
+    image:
+      "https://images.unsplash.com/photo-1560185007-cde436f6a4d0?auto=format&fit=crop&w=1000&q=80",
+    description:
+      "A separate living area, king bed, and work station for business travelers and longer stays.",
+  },
+  {
+    name: "Rooftop Penthouse",
+    category: "Suite",
+    price: 4500,
+    capacity: 4,
+    bed: "1 King + 2 Single Beds",
+    image:
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1000&q=80",
+    description:
+      "Our top-floor suite with direct rooftop deck access and the best sunset view in the area.",
+  },
+];
+
+const roomCategories = [
+  "All",
+  "Solo",
+  "Standard",
+  "Deluxe",
+  "Family",
+  "Group",
+  "Suite",
+];
+
+const foodItems = [
+  {
+    title: "Filipino Buffet Breakfast",
+    category: "Breakfast",
+    price: "₱350 / head",
+    image:
+      "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=800&q=80",
+    desc: "Traditional garlic rice, eggs, local longganisa, savory cured beef tapa, and seasonal fresh fruits.",
+  },
+  {
+    title: "Fresh Seafood Platter",
+    category: "Seafood",
+    price: "₱850 / platter",
+    image:
+      "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80",
+    desc: "Local coastal catch featuring grilled prawns, tender squid, and buttered crabs.",
+  },
+  {
+    title: "Artisanal Coffee & Pastries",
+    category: "Coffee",
+    price: "₱180+",
+    image:
+      "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80",
+    desc: "Freshly brewed highland coffee served alongside premium homemade baked goods.",
+  },
+  {
+    title: "Tropical Cocktails & Drinks",
+    category: "Drinks",
+    price: "₱220+",
+    image:
+      "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=800&q=80",
+    desc: "Refreshing fruit smoothies, fresh coconut water, and signature tropical cocktails.",
+  },
+  {
+    title: "Iced Caramel Latte",
+    category: "Coffee",
+    price: "₱160",
+    image:
+      "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=800&q=80",
+    desc: "Chilled espresso with milk and house caramel, served over ice for a cool afternoon break.",
+  },
+  {
+    title: "Sunset Mojito",
+    category: "Drinks",
+    price: "₱240",
+    image:
+      "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=800&q=80",
+    desc: "Fresh mint, lime, and soda with a hint of local calamansi, best enjoyed on the rooftop deck.",
+  },
+  {
+    title: "Grilled Squid & Rice",
+    category: "Seafood",
+    price: "₱320",
+    image:
+      "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&w=800&q=80",
+    desc: "Charcoal-grilled squid with garlic rice, atchara, and a tangy dipping sauce.",
+  },
+  {
+    title: "Tapsilog Morning Set",
+    category: "Breakfast",
+    price: "₱180",
+    image:
+      "https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?auto=format&fit=crop&w=800&q=80",
+    desc: "Tender beef tapa, garlic rice, and sunny-side-up egg served with hot coffee.",
+  },
+];
+
+const menuCategories = ["All", "Breakfast", "Seafood", "Coffee", "Drinks"];
+
+const paymentOptions = ["GCash", "Cash", "Bank Transfer", "Credit/Debit Card"];
+
 export default function HotelInfo({
   user,
   onLogin,
@@ -286,6 +494,7 @@ export default function HotelInfo({
   const [formData, setFormData] = useState(emptyForm);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [pendingBooking, setPendingBooking] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const navLinkStyle = {
     margin: "0 15px",
@@ -295,225 +504,15 @@ export default function HotelInfo({
     transition: "color 0.3s ease",
   };
 
-  const rooms = [
-    {
-      name: "Economy Fan Room",
-      category: "Standard",
-      price: 800,
-      capacity: 2,
-      bed: "1 Double Bed",
-      image:
-        "https://images.unsplash.com/photo-1595576508898-0ad5c879a061?auto=format&fit=crop&w=1000&q=80",
-      description:
-        "A budget-friendly room with electric fan, private bathroom, and free Wi-Fi for a simple overnight stay.",
-    },
-    {
-      name: "Solo Room",
-      category: "Solo",
-      price: 1000,
-      capacity: 1,
-      bed: "1 Single Bed",
-      image:
-        "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1000&q=80",
-      description:
-        "Perfect for solo travelers looking for a comfortable and affordable air-conditioned stay.",
-    },
-    {
-      name: "Standard Room",
-      category: "Standard",
-      price: 1200,
-      capacity: 2,
-      bed: "1 Queen Bed",
-      image:
-        "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1000&q=80",
-      description:
-        "A cozy and clean room equipped with air conditioning, a private bathroom, complimentary Wi-Fi, and a flat-screen TV.",
-    },
-    {
-      name: "Twin Room",
-      category: "Standard",
-      price: 1400,
-      capacity: 2,
-      bed: "2 Single Beds",
-      image:
-        "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1000&q=80",
-      description:
-        "Two separate single beds, ideal for friends, coworkers, or siblings traveling together.",
-    },
-    {
-      name: "Deluxe Queen Room",
-      category: "Deluxe",
-      price: 1600,
-      capacity: 2,
-      bed: "1 Queen Bed + Work Desk",
-      image:
-        "https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1000&q=80",
-      description:
-        "A spacious air-conditioned room featuring a functional work desk, a mini refrigerator, and complimentary artisan coffee.",
-    },
-    {
-      name: "Triple Room",
-      category: "Family",
-      price: 2000,
-      capacity: 3,
-      bed: "1 Queen + 1 Single Bed",
-      image:
-        "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1000&q=80",
-      description:
-        "A comfortable room for three guests with a queen bed, a single bed, and a small lounge corner.",
-    },
-    {
-      name: "Family Suite Room",
-      category: "Family",
-      price: 2400,
-      capacity: 4,
-      bed: "2 Queen Beds",
-      image:
-        "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1000&q=80",
-      description:
-        "Designed for families or groups, offering two large beds, an expansive bathroom, and a comfortable seating area.",
-    },
-    {
-      name: "Honeymoon Suite",
-      category: "Suite",
-      price: 2800,
-      capacity: 2,
-      bed: "1 King Bed",
-      image:
-        "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1000&q=80",
-      description:
-        "A romantic suite with a king bed, private balcony, soaking bathtub, and breakfast for two.",
-    },
-    {
-      name: "Barkada Group Room",
-      category: "Group",
-      price: 3200,
-      capacity: 6,
-      bed: "3 Bunk Beds / Twin Beds",
-      image:
-        "https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1000&q=80",
-      description:
-        "An economical group accommodation for up to six persons, ideal for team trips, student outings, and gatherings.",
-    },
-    {
-      name: "Executive Suite",
-      category: "Suite",
-      price: 3800,
-      capacity: 3,
-      bed: "1 King Bed + Sofa Bed",
-      image:
-        "https://images.unsplash.com/photo-1560185007-cde436f6a4d0?auto=format&fit=crop&w=1000&q=80",
-      description:
-        "A separate living area, king bed, and work station for business travelers and longer stays.",
-    },
-    {
-      name: "Rooftop Penthouse",
-      category: "Suite",
-      price: 4500,
-      capacity: 4,
-      bed: "1 King + 2 Single Beds",
-      image:
-        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1000&q=80",
-      description:
-        "Our top-floor suite with direct rooftop deck access and the best sunset view in the area.",
-    },
-  ];
-
-  const roomCategories = [
-    "All",
-    "Solo",
-    "Standard",
-    "Deluxe",
-    "Family",
-    "Group",
-    "Suite",
-  ];
-
   const visibleRooms =
     roomFilter === "All"
       ? rooms
       : rooms.filter((r) => r.category === roomFilter);
 
-  const foodItems = [
-    {
-      title: "Filipino Buffet Breakfast",
-      category: "Breakfast",
-      price: "₱350 / head",
-      image:
-        "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=800&q=80",
-      desc: "Traditional garlic rice, eggs, local longganisa, savory cured beef tapa, and seasonal fresh fruits.",
-    },
-    {
-      title: "Fresh Seafood Platter",
-      category: "Seafood",
-      price: "₱850 / platter",
-      image:
-        "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80",
-      desc: "Local coastal catch featuring grilled prawns, tender squid, and buttered crabs.",
-    },
-    {
-      title: "Artisanal Coffee & Pastries",
-      category: "Coffee",
-      price: "₱180+",
-      image:
-        "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80",
-      desc: "Freshly brewed highland coffee served alongside premium homemade baked goods.",
-    },
-    {
-      title: "Tropical Cocktails & Drinks",
-      category: "Drinks",
-      price: "₱220+",
-      image:
-        "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=800&q=80",
-      desc: "Refreshing fruit smoothies, fresh coconut water, and signature tropical cocktails.",
-    },
-    {
-      title: "Iced Caramel Latte",
-      category: "Coffee",
-      price: "₱160",
-      image:
-        "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=800&q=80",
-      desc: "Chilled espresso with milk and house caramel, served over ice for a cool afternoon break.",
-    },
-    {
-      title: "Sunset Mojito",
-      category: "Drinks",
-      price: "₱240",
-      image:
-        "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=800&q=80",
-      desc: "Fresh mint, lime, and soda with a hint of local calamansi, best enjoyed on the rooftop deck.",
-    },
-    {
-      title: "Grilled Squid & Rice",
-      category: "Seafood",
-      price: "₱320",
-      image:
-        "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&w=800&q=80",
-      desc: "Charcoal-grilled squid with garlic rice, atchara, and a tangy dipping sauce.",
-    },
-    {
-      title: "Tapsilog Morning Set",
-      category: "Breakfast",
-      price: "₱180",
-      image:
-        "https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?auto=format&fit=crop&w=800&q=80",
-      desc: "Tender beef tapa, garlic rice, and sunny-side-up egg served with hot coffee.",
-    },
-  ];
-
-  const menuCategories = ["All", "Breakfast", "Seafood", "Coffee", "Drinks"];
-
   const visibleFood =
     menuFilter === "All"
       ? foodItems
       : foodItems.filter((f) => f.category === menuFilter);
-
-  const paymentOptions = [
-    "GCash",
-    "Cash",
-    "Bank Transfer",
-    "Credit/Debit Card",
-  ];
 
   const today = toDateInputValue(new Date());
   const selectedRoom =
@@ -597,28 +596,40 @@ export default function HotelInfo({
     setFormData((prev) => ({ ...prev, paymentMethod: method }));
   };
 
-  // Naka-konekta na direkta sa Node.js / XAMPP Database API
+  // Nagse-save sa Node.js / XAMPP Database API
   const handleSubmitBooking = async (e) => {
     e.preventDefault();
-    if (!datesValid) return;
+    if (!datesValid || isSaving) return;
 
+    const reservationData = {
+      id: "RES-" + Date.now().toString().slice(-6),
+      guestName: formData.guestName,
+      email: formData.email,
+      phone: formData.phone,
+      roomType: formData.roomType,
+      guests: Number(formData.guests) || 1,
+      checkIn: formData.checkIn,
+      checkOut: formData.checkOut,
+      nights,
+      totalAmount,
+      paymentMethod: formData.paymentMethod,
+      notes: formData.notes,
+      status: "Pending",
+      userId: user?.uid || null,
+    };
+
+    setIsSaving(true);
     try {
-      const reservationData = {
-        id: "RES-" + Date.now().toString().slice(-6),
-        ...formData,
-        nights,
-        totalAmount,
-        status: "Pending",
-        userId: user?.uid || null,
-      };
-
-      const response = await fetch("http://localhost:8080/api/reservations", {
+      const response = await fetch(API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(reservationData),
       });
 
-      if (!response.ok) throw new Error("Failed to save reservation");
+      if (!response.ok) {
+        const detail = await response.text().catch(() => "");
+        throw new Error(`Server ${response.status} ${detail}`);
+      }
 
       setBookingReceipt(reservationData);
     } catch (err) {
@@ -626,6 +637,8 @@ export default function HotelInfo({
       alert(
         "May error sa pag-save ng reservation sa database. Siguraduhing buhay ang server at database.",
       );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1205,7 +1218,7 @@ export default function HotelInfo({
                     fontSize: "1.05rem",
                   }}
                 >
-                  Booking confirmed and saved to database!
+                  Booking received! Status: Pending
                 </div>
 
                 <div
@@ -1289,8 +1302,8 @@ export default function HotelInfo({
                     marginTop: "15px",
                   }}
                 >
-                  Thank you for booking with DIVAA HOTEL in ROXAS! Na-save na
-                  ito sa database.
+                  Thank you for booking with DIVAA HOTEL in ROXAS! Makikita na
+                  ng hotel ang reservation mo, at ico-confirm nila ito.
                 </p>
 
                 <button
@@ -1597,9 +1610,9 @@ export default function HotelInfo({
                   <button
                     type="submit"
                     className="bb-submit"
-                    disabled={!datesValid}
+                    disabled={!datesValid || isSaving}
                   >
-                    Confirm Booking
+                    {isSaving ? "Saving..." : "Confirm Booking"}
                   </button>
                 </form>
               </div>

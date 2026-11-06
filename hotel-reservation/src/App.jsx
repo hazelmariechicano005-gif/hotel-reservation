@@ -12,6 +12,26 @@ import Display from "./components/Display.jsx";
 import HotelInfo from "./components/HotelInfo.jsx";
 import { auth, db, googleProvider } from "./Firebase.js";
 
+const API_BASE = "http://localhost:8080";
+
+async function syncUserToDatabase(profile) {
+  try {
+    await fetch(`${API_BASE}/api/users/sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        uid: profile.uid,
+        name: profile.name,
+        email: profile.email,
+        photoURL: profile.photoURL || "",
+        role: profile.role,
+      }),
+    });
+  } catch (error) {
+    console.warn("Could not save user to database:", error);
+  }
+}
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -78,8 +98,7 @@ export default function App() {
           return;
         }
 
-        setUser(firebaseUser);
-        setProfile({
+        const nextProfile = {
           ...data,
           uid: firebaseUser.uid,
           email: firebaseUser.email || data.email || "",
@@ -89,7 +108,11 @@ export default function App() {
             firebaseUser.email?.split("@")[0] ||
             "Customer",
           role: normalizedRole,
-        });
+        };
+
+        setUser(firebaseUser);
+        setProfile(nextProfile);
+        syncUserToDatabase(nextProfile);
       } catch (error) {
         console.error("Authentication state error:", error);
         await signOut(auth).catch(() => {});
