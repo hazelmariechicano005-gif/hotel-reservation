@@ -10,11 +10,10 @@ const db = mysql.createPool({
   host: "localhost",
   user: "root",
   password: "",
-  database: "divaa_hotel_db", // iisang database para sa lahat ng routes
+  database: "divaa_hotel_db",
   dateStrings: true,
 });
 
-// Database row
 const toClient = (r) => ({
   id: r.id,
   guestName: r.guest_name,
@@ -31,7 +30,16 @@ const toClient = (r) => ({
   status: r.status || "Pending",
 });
 
-// READ
+app.post("/api/users/sync", async (req, res) => {
+  try {
+    const { uid, name, email, role } = req.body;
+    res.json({ ok: true, message: "User synced successfully!" });
+  } catch (err) {
+    console.error("Sync error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get("/api/reservations", async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -44,7 +52,6 @@ app.get("/api/reservations", async (req, res) => {
   }
 });
 
-// CREATE
 app.post("/api/reservations", async (req, res) => {
   try {
     const b = req.body;
@@ -77,23 +84,22 @@ app.post("/api/reservations", async (req, res) => {
   }
 });
 
-// UPDATE
 app.put("/api/reservations/:id", async (req, res) => {
   try {
     const b = req.body;
     const [result] = await db.query(
       `UPDATE reservations SET
-        guest_name     = COALESCE(?, guest_name),
-        email          = COALESCE(?, email),
-        phone          = COALESCE(?, phone),
-        room_type      = COALESCE(?, room_type),
-        guests         = COALESCE(?, guests),
-        check_in       = COALESCE(?, check_in),
-        check_out      = COALESCE(?, check_out),
-        nights         = COALESCE(?, nights),
-        total_amount   = COALESCE(?, total_amount),
+        guest_name    = COALESCE(?, guest_name),
+        email         = COALESCE(?, email),
+        phone         = COALESCE(?, phone),
+        room_type     = COALESCE(?, room_type),
+        guests        = COALESCE(?, guests),
+        check_in      = COALESCE(?, check_in),
+        check_out     = COALESCE(?, check_out),
+        nights        = COALESCE(?, nights),
+        total_amount  = COALESCE(?, total_amount),
         payment_method = COALESCE(?, payment_method),
-        status         = COALESCE(?, status)
+        status        = COALESCE(?, status)
        WHERE id = ?`,
       [
         b.guestName ?? null,
@@ -121,7 +127,6 @@ app.put("/api/reservations/:id", async (req, res) => {
   }
 });
 
-// DELETE
 app.delete("/api/reservations/:id", async (req, res) => {
   try {
     const [result] = await db.query("DELETE FROM reservations WHERE id = ?", [
