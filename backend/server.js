@@ -1,53 +1,25 @@
 const express = require("express");
 const cors = require("cors");
-const mysql = require("mysql2/promise");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const db = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "divaa_hotel_db",
-  dateStrings: true,
-});
-
-const toClient = (r) => ({
-  id: r.id,
-  guestName: r.guest_name,
-  email: r.email,
-  phone: r.phone,
-  roomType: r.room_type,
-  guests: r.guests,
-  checkIn: r.check_in,
-  checkOut: r.check_out,
-  nights: r.nights,
-  totalAmount: Number(r.total_amount),
-  paymentMethod: r.payment_method,
-  notes: r.notes,
-  status: r.status || "Pending",
-});
+let reservations = [];
 
 app.post("/api/users/sync", async (req, res) => {
   try {
     const { uid, name, email, role } = req.body;
     res.json({ ok: true, message: "User synced successfully!" });
   } catch (err) {
-    console.error("Sync error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.get("/api/reservations", async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT * FROM reservations ORDER BY check_in DESC",
-    );
-    res.json(rows.map(toClient));
+    res.json(reservations);
   } catch (err) {
-    console.error("GET error:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -55,90 +27,55 @@ app.get("/api/reservations", async (req, res) => {
 app.post("/api/reservations", async (req, res) => {
   try {
     const b = req.body;
-    await db.query(
-      `INSERT INTO reservations
-       (id, guest_name, email, phone, room_type, guests, check_in, check_out,
-        nights, total_amount, payment_method, notes, status)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [
-        b.id,
-        b.guestName,
-        b.email,
-        b.phone,
-        b.roomType,
-        b.guests || 1,
-        b.checkIn,
-        b.checkOut,
-        b.nights || 0,
-        b.totalAmount || 0,
-        b.paymentMethod || "Cash",
-        b.notes || null,
-        b.status || "Pending",
-      ],
-    );
-    console.log("CREATED", b.id);
-    res.status(201).json({ ok: true, id: b.id });
+    const newReservation = {
+      id: b.id || "RES-" + Date.now().toString().slice(-6),
+      guestName: b.guestName || "",
+      email: b.email || "",
+      phone: b.phone || "",
+      roomType: b.roomType || "Standard Room",
+      guests: Number(b.guests) || 1,
+      checkIn: b.checkIn || "",
+      checkOut: b.checkOut || "",
+      nights: Number(b.nights) || 1,
+      totalAmount: Number(b.totalAmount) || 0,
+      paymentMethod: b.paymentMethod || "Cash",
+      notes: b.notes || "",
+      status: b.status || "Pending",
+    };
+    reservations.unshift(newReservation);
+    res.status(201).json({ ok: true, id: newReservation.id });
   } catch (err) {
-    console.error("POST error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.put("/api/reservations/:id", async (req, res) => {
   try {
-    const b = req.body;
-    const [result] = await db.query(
-      `UPDATE reservations SET
-        guest_name    = COALESCE(?, guest_name),
-        email         = COALESCE(?, email),
-        phone         = COALESCE(?, phone),
-        room_type     = COALESCE(?, room_type),
-        guests        = COALESCE(?, guests),
-        check_in      = COALESCE(?, check_in),
-        check_out     = COALESCE(?, check_out),
-        nights        = COALESCE(?, nights),
-        total_amount  = COALESCE(?, total_amount),
-        payment_method = COALESCE(?, payment_method),
-        status        = COALESCE(?, status)
-       WHERE id = ?`,
-      [
-        b.guestName ?? null,
-        b.email ?? null,
-        b.phone ?? null,
-        b.roomType ?? null,
-        b.guests ?? null,
-        b.checkIn ?? null,
-        b.checkOut ?? null,
-        b.nights ?? null,
-        b.totalAmount ?? null,
-        b.paymentMethod ?? null,
-        b.status ?? null,
-        req.params.id,
-      ],
-    );
-    if (result.affectedRows === 0) {
+    const id = req.params.id;
+    const index = reservations.findIndex((r) => r.id === id);
+    if (index === -1) {
       return res.status(404).json({ error: "Reservation not found" });
     }
-    console.log("UPDATED", req.params.id);
+    reservations[index] = {
+      ...reservations[index],
+      ...req.body,
+    };
     res.json({ ok: true });
   } catch (err) {
-    console.error("PUT error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.delete("/api/reservations/:id", async (req, res) => {
   try {
-    const [result] = await db.query("DELETE FROM reservations WHERE id = ?", [
-      req.params.id,
-    ]);
-    if (result.affectedRows === 0) {
+    const id = req.params.id;
+    const initialLength = reservations.length;
+    reservations = reservations.filter((r) => r.id !== id);
+    if (reservations.length === initialLength) {
       return res.status(404).json({ error: "Reservation not found" });
     }
-    console.log("DELETED", req.params.id);
     res.json({ ok: true });
   } catch (err) {
-    console.error("DELETE error:", err);
     res.status(500).json({ error: err.message });
   }
 });
